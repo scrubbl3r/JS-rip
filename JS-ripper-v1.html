@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Green Wireframe GLB Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html, body { height: 100%; margin: 0; background: #000; color: #fff; }
+      #app { position: fixed; inset: 0; }
+      .ui { position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+        width: min(960px, 92vw); display: grid; gap: 8px; z-index: 10;
+        font: 14px/1.3 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+      .bar { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+      .panel { background: rgba(16,16,16,.7); border: 1px solid #333; border-radius: 12px; padding: 10px; }
+      input[type="text"] { width: 100%; background: #0a0a0a; color: #fff; border: 1px solid #333;
+        border-radius: 10px; padding: 8px 10px; outline: none; }
+      input[type="text"]:focus { border-color: #84cc16; }
+      button, label.btn { cursor: pointer; user-select: none; padding: 8px 12px; border-radius: 10px;
+        border: 1px solid #333; background: #121212; color: #fff; }
+      button:hover, label.btn:hover { border-color: #84cc16; }
+      .drop { text-align: center; padding: 14px; border-radius: 12px;
+        border: 1px dashed #333; background: rgba(10,10,10,.6); }
+      .drop.active { border-color: #84cc16; background: rgba(54,83,20,.25); }
+      a { color: #a3e635; }
+      .hint { opacity: .75; }
+    </style>
+
+    <!-- Import map so modules that import from "three" can resolve in the browser -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <div class="ui">
+      <div class="panel drop" id="drop">
+        <input id="file" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden />
+        <div class="bar">
+          <div>
+            <label class="btn" for="file">Choose .glb/.gltf</label>
+            <span class="hint">or drag & drop a file here</span>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <input id="url" type="text" placeholder="…or paste a GLB/GLTF URL" />
+            <button id="loadUrl">Load</button>
+          </div>
+        </div>
+        <div class="hint" style="margin-top:6px">
+          If a file named <code>test_sph.glb</code> is in the same folder as this page, it’ll auto-load.
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import * as THREE from 'three';
+      import { OrbitControls } from 'https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js';
+      import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+
+      const app = document.getElementById('app');
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0x000000, 1);
+      app.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 1000);
+      camera.position.set(0, 0, 6);
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+      const dir = new THREE.DirectionalLight(0xffffff, 0.6);
+      dir.position.set(5, 5, 5);
+      scene.add(dir);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enablePan = false;
+
+      const root = new THREE.Group();
+      scene.add(root);
+
+      const manager = new THREE.LoadingManager();
+      const loader = new GLTFLoader(manager);
+      const wireMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, wireframe: true });
+
+      function applyGreenWireframe(object3d) {
+        object3d.traverse((child) => {
+          if (child.isMesh) {
+            child.material = wireMat;
+            child.castShadow = false;
+            child.receiveShadow = false;
+          }
+        });
+      }
+
+      function centerAndFit(object3d, targetSize = 3.2) {
+        const box = new THREE.Box3().setFromObject(object3d);
+        const size = new THREE.Vector3();
+        const center = new THREE.Vector3();
+        box.getSize(size);
+        box.getCenter(center);
+
+        object3d.position.sub(center);
+
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const scale = targetSize / maxDim;
+        object3d.scale.setScalar(scale);
+
+        const box2 = new THREE.Box3().setFromObject(object3d);
+        const center2 = new THREE.Vector3();
+        box2.getCenter(center2);
+        object3d.position.sub(center2);
+      }
+
+      function clearRoot() {
+        while (root.children.length) {
+          const c = root.children.pop();
+          c.traverse?.((obj) => {
+            if (obj.geometry) obj.geometry.dispose?.();
+            if (obj.material) obj.material.dispose?.();
+          });
+        }
+      }
+
+      async function loadGLBFromURL(url) {
+        const gltf = await loader.loadAsync(url);
+        return gltf.scene;
+      }
+
+      async function showScene(sceneObject) {
+        clearRoot();
+        applyGreenWireframe(sceneObject);
+        centerAndFit(sceneObject);
+        root.add(sceneObject);
+      }
+
+      const clock = new THREE.Clock();
+      function animate() {
+        requestAnimationFrame(animate);
+        const dt = clock.getDelta();
+        root.rotation.y += 0.2 * dt; // slow continuous rotation
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      window.addEventListener('resize', () => {
+        const w = window.innerWidth, h = window.innerHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+
+      const fileInput = document.getElementById('file');
+      const urlInput = document.getElementById('url');
+      const loadUrlBtn = document.getElementById('loadUrl');
+      const dropArea = document.getElementById('drop');
+
+      fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const objectUrl = URL.createObjectURL(file);
+        const obj = await loadGLBFromURL(objectUrl);
+        await showScene(obj);
+      });
+
+      loadUrlBtn.addEventListener('click', async () => {
+        const url = (urlInput.value || '').trim();
+        if (!url) return;
+        try {
+          const obj = await loadGLBFromURL(url);
+          await showScene(obj);
+        } catch (e) {
+          console.error(e);
+          alert('Failed to load URL. See console for details.');
+        }
+      });
+
+      ['dragenter','dragover'].forEach(evt => {
+        dropArea.addEventListener(evt, (e) => {
+          e.preventDefault(); e.stopPropagation(); dropArea.classList.add('active');
+        }, false);
+      });
+      ['dragleave','drop'].forEach(evt => {
+        dropArea.addEventListener(evt, (e) => {
+          e.preventDefault(); e.stopPropagation(); dropArea.classList.remove('active');
+        }, false);
+      });
+      dropArea.addEventListener('drop', async (e) => {
+        const file = e.dataTransfer?.files?.[0];
+        if (!file) return;
+        const objectUrl = URL.createObjectURL(file);
+        try {
+          const obj = await loadGLBFromURL(objectUrl);
+          await showScene(obj);
+        } catch (err) {
+          console.error(err);
+          alert('Failed to load file. See console for details.');
+        }
+      });
+
+      (async () => {
+        try {
+          const probe = await fetch('./test_sph.glb', { method: 'HEAD' });
+          if (probe.ok) {
+            const obj = await loadGLBFromURL('./test_sph.glb');
+            await showScene(obj);
+          }
+        } catch {}
+      })();
+    </script>
+  </body>
+</html>
