@@ -8,28 +8,28 @@
     html, body { height: 100%; margin: 0; background: #000; color: #fff; }
     #app { position: fixed; inset: 0; }
 
-    /* Alpha-only pulse for the dog-ear background (100% -> 20% -> 100%) */
-    @keyframes dogear-alpha {
-      0%   { background: rgba(255,105,180,1.0); }
-      50%  { background: rgba(255,105,180,0.20); }
-      100% { background: rgba(255,105,180,1.0); }
+    /* Color pulse: hot pink -> black -> hot pink (no scale/brightness), 1000ms ease-in-out */
+    @keyframes dogear-color {
+      0%   { background: #ff69b4; }
+      50%  { background: #000000; }
+      100% { background: #ff69b4; }
     }
 
-    /* Dog-ear — 48x48, hot pink, opaque border, alpha pulse on background only */
+    /* Dog-ear — 24x24, pulsing color; borders stay constant hot pink */
     #dogear {
-      position: fixed; right: 0; bottom: 0; width: 48px; height: 48px;
+      position: fixed; right: 0; bottom: 0; width: 24px; height: 24px;
       clip-path: polygon(100% 0, 0 100%, 100% 100%);
-      background: rgba(255,105,180,1.0);     /* pulsed via keyframes */
-      border-left: 1px solid #ff69b4;        /* keep borders solid/constant */
+      background: #ff69b4;                 /* animated by keyframes */
+      border-left: 1px solid #ff69b4;      /* keep constant to preserve the “fold” line */
       border-top: 1px solid #ff69b4;
       z-index: 10; cursor: pointer;
-      animation: dogear-alpha 1.6s ease-in-out infinite;
+      animation: dogear-color 1000ms ease-in-out infinite;
     }
 
     /* Tooltip on hover */
     #dogear::after {
       content: "drop glb here";
-      position: absolute; right: 56px; bottom: 10px;  /* nudged for 48px ear */
+      position: absolute; right: 32px; bottom: 6px;   /* nudged for 24px ear */
       padding: 4px 8px; font: 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
       background: rgba(20,20,20,.85); border: 1px solid #333; border-radius: 8px; color: #ffd9ef;
       opacity: 0; pointer-events: none; transition: opacity .15s ease; white-space: nowrap;
