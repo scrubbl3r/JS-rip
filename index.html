@@ -8,33 +8,22 @@
     html, body { height: 100%; margin: 0; background: #000; color: #fff; }
     #app { position: fixed; inset: 0; }
 
-    /* Hot pink -> black -> hot pink (no model loaded) */
+    /* Color pulse: hot pink -> black -> hot pink (no scale/brightness), 1000ms ease-in-out */
     @keyframes dogear-color {
       0%   { background: #ff69b4; }
       50%  { background: #000000; }
       100% { background: #ff69b4; }
     }
 
-    /* Dimmed: 35% hot pink -> black -> 35% hot pink (after model is loaded) */
-    @keyframes dogear-dim {
-      0%   { background: rgba(255,105,180,0.35); }
-      50%  { background: #000000; }
-      100% { background: rgba(255,105,180,0.35); }
-    }
-
-    /* Dog-ear — 24x24, border stays constant hot pink */
+    /* Dog-ear — 24x24, pulsing color; borders stay constant hot pink */
     #dogear {
       position: fixed; right: 0; bottom: 0; width: 24px; height: 24px;
       clip-path: polygon(100% 0, 0 100%, 100% 100%);
-      background: #ff69b4;                 /* base color; animated via keyframes */
-      border-left: 1px solid #ff69b4;      /* keep constant to preserve the “fold” */
+      background: #ff69b4;                 /* animated by keyframes */
+      border-left: 1px solid #ff69b4;      /* keep constant to preserve the “fold” line */
       border-top: 1px solid #ff69b4;
       z-index: 10; cursor: pointer;
       animation: dogear-color 1000ms ease-in-out infinite;
-    }
-    /* Switch to dimmed pulse when loaded */
-    #dogear.loaded {
-      animation: dogear-dim 1000ms ease-in-out infinite;
     }
 
     /* Tooltip on hover */
@@ -48,7 +37,7 @@
     #dogear:hover::after { opacity: 1; }
 
     @media (prefers-reduced-motion: reduce) {
-      #dogear, #dogear.loaded { animation: none; }
+      #dogear { animation: none; }
     }
 
     /* Optional tiny hint (bottom-left) */
@@ -156,9 +145,6 @@
       applyGreenWireframe(obj);
       centerAndFit(obj, 3.2, true);
       root.add(obj);
-
-      // dim the dog-ear pulse once a model is loaded
-      dogear.classList.add('loaded');
     }
 
     // ---- render loop ----
