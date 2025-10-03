@@ -8,14 +8,14 @@
     html, body { height: 100%; margin: 0; background: #000; color: #fff; }
     #app { position: fixed; inset: 0; }
 
-    /* Pulse animation (scales from the corner) */
-    @keyframes dogear-pulse {
-      0%   { transform: scale(1);   box-shadow: 0 0 0 rgba(255,105,180,0.0); }
-      50%  { transform: scale(1.12); box-shadow: 0 0 16px rgba(255,105,180,0.35); }
-      100% { transform: scale(1);   box-shadow: 0 0 0 rgba(255,105,180,0.0); }
+    /* Glow (luminosity) pulse */
+    @keyframes dogear-glow {
+      0%   { filter: brightness(1);   box-shadow: 0 0 0 rgba(255,105,180,0.00); }
+      50%  { filter: brightness(1.35); box-shadow: 0 0 22px rgba(255,105,180,0.45); }
+      100% { filter: brightness(1);   box-shadow: 0 0 0 rgba(255,105,180,0.00); }
     }
 
-    /* Dog-ear — 200% larger vs original 32px (now 96x96), hot pink, opaque, pulsing */
+    /* Dog-ear — 96x96, hot pink, opaque, glowing */
     #dogear {
       position: fixed; right: 0; bottom: 0; width: 96px; height: 96px;
       clip-path: polygon(100% 0, 0 100%, 100% 100%);
@@ -23,12 +23,11 @@
       border-left: 1px solid #ff69b4;
       border-top: 1px solid #ff69b4;
       z-index: 10; cursor: pointer;
-      transform-origin: 100% 100%;
-      animation: dogear-pulse 1.5s ease-in-out infinite;
+      animation: dogear-glow 1.6s ease-in-out infinite;
       transition: filter .2s ease;
     }
     #dogear:hover,
-    #dogear.active { filter: brightness(1.15); }
+    #dogear.active { filter: brightness(1.45); }
 
     /* Tooltip on hover */
     #dogear::after {
@@ -173,12 +172,12 @@
 
     dogear.addEventListener('click', () => fileEl.click());
 
-    ['dragenter','dragover'].forEach(evt => {
+    ['dragenter','dragover'].forEach((evt) => {
       dogear.addEventListener(evt, (e) => {
         e.preventDefault(); e.stopPropagation(); dogear.classList.add('active');
       }, false);
     });
-    ['dragleave','drop'].forEach(evt => {
+    ['dragleave','drop'].forEach((evt) => {
       dogear.addEventListener(evt, (e) => {
         e.preventDefault(); e.stopPropagation(); dogear.classList.remove('active');
       }, false);
